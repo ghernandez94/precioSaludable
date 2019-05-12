@@ -24,17 +24,31 @@ namespace preciosaludable
             Configuration = configuration;
         }
 
+        readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2).AddJsonOptions(options => {
-                    options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
-                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+            services.AddCors(options => {
+                options.AddPolicy(MyAllowSpecificOrigins,
+                    builder => { 
+                        builder
+                            .AllowAnyOrigin()
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    });
             });
-            services.AddDbContext<preciosaludableContext>(options => 
+
+            services.AddDbContext<preciosaludableContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("preciosaludable")));
+
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2).AddJsonOptions(options =>
+            {
+                options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,6 +64,7 @@ namespace preciosaludable
                 app.UseHsts();
             }
 
+            app.UseCors(MyAllowSpecificOrigins); 
             app.UseHttpsRedirection();
             app.UseMvc();
         }
