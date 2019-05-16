@@ -9,7 +9,7 @@ using preciosaludable.Models;
 
 namespace preciosaludable.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/{Controller}")]
     [ApiController]
     public class ProductoController : ControllerBase
     {
@@ -20,10 +20,79 @@ namespace preciosaludable.Controllers
             _context = context;
         }
 
-        [HttpGet("[action]/{s}")]
-        public async Task<ActionResult<IEnumerable<Producto>>> Buscar(string s)
+        // GET: api/Producto/1
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Producto>> GetProducto(long id)
+        {
+            var producto = await _context.Producto.FindAsync(id);
+
+            if (producto == null)
+            {
+                return NotFound();
+            }
+
+            return producto;
+        }
+
+        // POST: api/Producto
+        [HttpPost]
+        public async Task<ActionResult<Producto>> AddProducto(Producto producto)
+        {
+            _context.Producto.Add(producto);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(Producto), producto);
+        }
+
+        // PUT: api/Producto/1
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProducto(long id, Producto producto)
+        {
+            if (id != producto.IdProducto)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(producto).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // DELETE: api/Todo/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProducto(long id)
+        {
+            var producto = await _context.Producto.FindAsync(id);
+
+            if (producto == null)
+            {
+                return NotFound();
+            }
+
+            producto.Estado = false;
+            _context.Entry(producto).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // GET: api/Producto/All
+
+        [HttpGet("All")]
+        public async Task<ActionResult<IEnumerable<Producto>>> All()
         {
             return await _context.Producto
+                .AsNoTracking()
+                .Where(p => p.Estado.Value)
+                .ToListAsync();
+        }
+
+        // GET: api/Producto/Buscar/paracetamol
+        [HttpGet("Buscar/{s}")]
+        public async Task<ActionResult<IEnumerable<Producto>>> Buscar(string s)
+        {
+            var productos = await _context.Producto
                 .AsNoTracking()
                 .Join(_context.Concentracion,
                     p => p.FarmacoIdFarmaco, 
@@ -38,6 +107,13 @@ namespace preciosaludable.Controllers
                 .ThenInclude(con => con.Concentracion)
                 .ThenInclude(pa => pa.PrincipioActivoIdPrincipioActivoNavigation)
                 .ToListAsync();
+
+            if (!productos.Any())
+            {
+                return NotFound();
+            }
+
+            return productos;
         }
     }
 }

@@ -9,7 +9,7 @@ using preciosaludable.Models;
 
 namespace preciosaludable.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/{Controller}")]
     [ApiController]
     public class LaboratorioController : ControllerBase
     {
@@ -20,8 +20,8 @@ namespace preciosaludable.Controllers
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Laboratorio>>> GetLaboratorios()
+        [HttpGet("All")]
+        public async Task<ActionResult<IEnumerable<Laboratorio>>> All()
         {
             return await _context.Laboratorio
                 .AsNoTracking()
