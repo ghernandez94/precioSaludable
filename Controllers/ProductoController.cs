@@ -108,11 +108,6 @@ namespace preciosaludable.Controllers
                 .ThenInclude(pa => pa.PrincipioActivoIdPrincipioActivoNavigation)
                 .ToListAsync();
 
-            if (!productos.Any())
-            {
-                return NotFound();
-            }
-
             return productos;
         }
     }
