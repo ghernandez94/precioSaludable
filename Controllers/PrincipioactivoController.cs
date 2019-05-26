@@ -20,8 +20,8 @@ namespace preciosaludable.Controllers
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Principioactivo>>> GetPrincipiosactivos()
+        [HttpGet("All")]
+        public async Task<ActionResult<IEnumerable<Principioactivo>>> All()
         {
             return await _context.Principioactivo
                 .AsNoTracking()

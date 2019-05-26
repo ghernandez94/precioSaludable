@@ -20,8 +20,8 @@ namespace preciosaludable.Controllers
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Unidadmedida>>> GetUnidadesmedida()
+        [HttpGet("All")]
+        public async Task<ActionResult<IEnumerable<Unidadmedida>>> All()
         {
             return await _context.Unidadmedida
                 .AsNoTracking()

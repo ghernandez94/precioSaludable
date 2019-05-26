@@ -20,8 +20,8 @@ namespace preciosaludable.Controllers
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Presentacion>>> GetPresentaciones()
+        [HttpGet("All")]
+        public async Task<ActionResult<IEnumerable<Presentacion>>> All()
         {
             return await _context.Presentacion
                 .AsNoTracking()

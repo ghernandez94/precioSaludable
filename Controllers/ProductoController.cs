@@ -38,10 +38,10 @@ namespace preciosaludable.Controllers
         [HttpPost]
         public async Task<ActionResult<Producto>> AddProducto(Producto producto)
         {
-            _context.Producto.Add(producto);
+            var prd = _context.Producto.Add(producto);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(Producto), producto);
+            return CreatedAtAction("GetProducto", new {id = producto.IdProducto}, producto);
         }
 
         // PUT: api/Producto/1
