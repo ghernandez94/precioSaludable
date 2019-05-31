@@ -94,19 +94,52 @@ namespace preciosaludable.Controllers
         {
             var productos = await _context.Producto
                 .AsNoTracking()
-                .Join(_context.Concentracion,
-                    p => p.FarmacoIdFarmaco, 
-                    c => c.FarmacoIdFarmaco,
-                    (p, c) => new {Producto = p, Concentracion = c})
-                .Where(p => (p.Producto.NombreComercialProducto.Contains(s) 
-                    || p.Concentracion.PrincipioActivoIdPrincipioActivoNavigation.NombrePrincipioActivo.Contains(s))
-                    && p.Producto.Estado.Value)
-                .Select(p => p.Producto)
-                .Include(p => p.LaboratorioIdLaboratorioNavigation)
-                .Include(p => p.FarmacoIdFarmacoNavigation)
-                .ThenInclude(con => con.Concentracion)
-                .ThenInclude(pa => pa.PrincipioActivoIdPrincipioActivoNavigation)
+                .Include(pro => pro.Detalleprecio)
+                .Include(pro => pro.LaboratorioIdLaboratorioNavigation)
+                .Include(pro => pro.FarmacoIdFarmacoNavigation)
+                .ThenInclude(far => far.Concentracion)
+                .ThenInclude(con => con.PrincipioActivoIdPrincipioActivoNavigation)
+                .Where(pro => (pro.NombreComercialProducto.Contains(s) 
+                    || pro.FarmacoIdFarmacoNavigation.Concentracion
+                        .Where( con => con.PrincipioActivoIdPrincipioActivoNavigation.NombrePrincipioActivo.Contains(s))
+                        .Any())
+                    && pro.Estado.Value)
+                .Select(pro => new Producto{
+                    CantidadPresentacion = pro.CantidadPresentacion,
+                    Estado = pro.Estado,
+                    FarmacoIdFarmaco = pro.FarmacoIdFarmaco,
+                    FarmacoIdFarmacoNavigation = pro.FarmacoIdFarmacoNavigation,
+                    IdProducto = pro.IdProducto,
+                    InverseProductoBioequivalenteNavigation = pro.InverseProductoBioequivalenteNavigation,
+                    LaboratorioIdLaboratorio = pro.LaboratorioIdLaboratorio,
+                    LaboratorioIdLaboratorioNavigation = pro.LaboratorioIdLaboratorioNavigation,
+                    NombreComercialProducto = pro.NombreComercialProducto,
+                    ProductoBioequivalente = pro.ProductoBioequivalente,
+                    ProductoBioequivalenteNavigation = pro.ProductoBioequivalenteNavigation,
+                    Detalleprecio = pro.Detalleprecio
+                        .Where(dp => dp.PrecioFarmaco == pro.Detalleprecio
+                            .Where(fecha => fecha.FechaHoraDetalle
+                                .Equals(pro.Detalleprecio.Max(max => (DateTime?)max.FechaHoraDetalle)))
+                            .Min(precio => (long?)precio.PrecioFarmaco))
+                        .ToList()
+                })
                 .ToListAsync();
+
+            // var productos = await _context.Producto
+            //     .AsNoTracking()
+            //     .Join(_context.Concentracion,
+            //         p => p.FarmacoIdFarmaco, 
+            //         c => c.FarmacoIdFarmaco,
+            //         (p, c) => new {Producto = p, Concentracion = c})
+            //     .Where(p => (p.Producto.NombreComercialProducto.Contains(s) 
+            //         || p.Concentracion.PrincipioActivoIdPrincipioActivoNavigation.NombrePrincipioActivo.Contains(s))
+            //         && p.Producto.Estado.Value)
+            //     .Select(p => p.Producto)
+            //     .Include(p => p.LaboratorioIdLaboratorioNavigation)
+            //     .Include(p => p.FarmacoIdFarmacoNavigation)
+            //     .ThenInclude(con => con.Concentracion)
+            //     .ThenInclude(pa => pa.PrincipioActivoIdPrincipioActivoNavigation)
+            //     .ToListAsync();
 
             return productos;
         }

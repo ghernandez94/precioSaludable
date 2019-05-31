@@ -56,6 +56,7 @@ namespace preciosaludable.Controllers
             return await _context.Sucursal
                 .AsNoTracking()
                 .Include(dp => dp.FarmaciaIdFarmaciaNavigation)
+                .Include(dp => dp.ComunaIdComunaNavigation)
                 .Where(dp => location.GetDistancia(new Location(dp.Latitud, dp.Longitud)) < proximidad
                     && dp.Estado.Value)
                 .ToListAsync();
