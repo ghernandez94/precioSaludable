@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using preciosaludable.Models;
 
@@ -19,6 +18,33 @@ namespace preciosaludable.Controllers
         {
             _context = context;
         }
+
+        // GET: api/Detalleprecio/1
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Detalleprecio>> GetDetalleprecio(long id)
+        {
+            var detalleprecio = await _context.Detalleprecio.FindAsync(id);
+
+            if (detalleprecio == null)
+            {
+                return NotFound();
+            }
+
+            return detalleprecio;
+        }
+
+        // POST: api/Detalleprecio
+        [HttpPost]
+        public async Task<ActionResult<Detalleprecio>> AddDetalleprecio(Detalleprecio detalleprecio)
+        {
+            detalleprecio.UsuarioIdUsuario = 1;
+            detalleprecio.FechaHoraDetalle = DateTime.Now;
+            _context.Detalleprecio.Add(detalleprecio);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetDetalleprecio", new {id = detalleprecio.IdDetallePrecio}, detalleprecio);
+        }
+
 
         [HttpGet("[action]/{IdProducto}")]
         public async Task<ActionResult<IEnumerable<Detalleprecio>>> GetPreciosActuales(long IdProducto)

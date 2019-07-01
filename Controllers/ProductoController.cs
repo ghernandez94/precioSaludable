@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using preciosaludable.Models;
 
@@ -20,11 +19,34 @@ namespace preciosaludable.Controllers
             _context = context;
         }
 
-        // GET: api/Producto/1
+        // GET: api/Producto/
         [HttpGet("{id}")]
         public async Task<ActionResult<Producto>> GetProducto(long id)
         {
-            var producto = await _context.Producto.FindAsync(id);
+            var producto = await _context.Producto
+                            .AsNoTracking()
+                            .Include(p => p.FarmacoIdFarmacoNavigation)
+                                .ThenInclude(f => f.Concentracion)
+                                .ThenInclude(c => c.PrincipioActivoIdPrincipioActivoNavigation)
+                            .Include(p => p.FarmacoIdFarmacoNavigation)
+                                .ThenInclude(f => f.PresentacionIdPresentacionNavigation)
+                            .Include(p => p.LaboratorioIdLaboratorioNavigation)
+                            .Include(p => p.Detalleprecio)
+                                .ThenInclude(dp => dp.SucursalIdSucursalNavigation)
+                                    .ThenInclude(s => s.FarmaciaIdFarmaciaNavigation)
+                            .Include(p => p.Detalleprecio)
+                                .ThenInclude(dp => dp.SucursalIdSucursalNavigation)
+                                    .ThenInclude(s => s.ComunaIdComunaNavigation)
+                            .SingleOrDefaultAsync(p => p.IdProducto == id);
+            
+            producto.Detalleprecio = producto.Detalleprecio.OrderBy(dp => dp.PrecioFarmaco).ToList();
+            producto.Detalleprecio = producto.Detalleprecio
+                .Where(dp => dp.FechaHoraDetalle
+                    .Equals(producto.Detalleprecio
+                        .Where(aux => dp.SucursalIdSucursal == aux.SucursalIdSucursal)
+                        .Max(aux => aux.FechaHoraDetalle)))
+                .ToList();
+                    
 
             if (producto == null)
             {
@@ -38,7 +60,7 @@ namespace preciosaludable.Controllers
         [HttpPost]
         public async Task<ActionResult<Producto>> AddProducto(Producto producto)
         {
-            var prd = _context.Producto.Add(producto);
+            _context.Producto.Add(producto);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetProducto", new {id = producto.IdProducto}, producto);
@@ -78,12 +100,15 @@ namespace preciosaludable.Controllers
         }
 
         // GET: api/Producto/All
-
         [HttpGet("All")]
         public async Task<ActionResult<IEnumerable<Producto>>> All()
         {
             return await _context.Producto
                 .AsNoTracking()
+                .Include(p => p.Detalleprecio)
+                .Include(p => p.LaboratorioIdLaboratorioNavigation)
+                .Include(p => p.FarmacoIdFarmacoNavigation)
+                    .ThenInclude(f => f.PresentacionIdPresentacionNavigation)
                 .Where(p => p.Estado.Value)
                 .ToListAsync();
         }
@@ -94,11 +119,6 @@ namespace preciosaludable.Controllers
         {
             var productos = await _context.Producto
                 .AsNoTracking()
-                .Include(pro => pro.Detalleprecio)
-                .Include(pro => pro.LaboratorioIdLaboratorioNavigation)
-                .Include(pro => pro.FarmacoIdFarmacoNavigation)
-                .ThenInclude(far => far.Concentracion)
-                .ThenInclude(con => con.PrincipioActivoIdPrincipioActivoNavigation)
                 .Where(pro => (pro.NombreComercialProducto.Contains(s) 
                     || pro.FarmacoIdFarmacoNavigation.Concentracion
                         .Where( con => con.PrincipioActivoIdPrincipioActivoNavigation.NombrePrincipioActivo.Contains(s))
@@ -118,9 +138,21 @@ namespace preciosaludable.Controllers
                     ProductoBioequivalenteNavigation = pro.ProductoBioequivalenteNavigation,
                     Detalleprecio = pro.Detalleprecio
                         .Where(dp => dp.PrecioFarmaco == pro.Detalleprecio
-                            .Where(fecha => fecha.FechaHoraDetalle
-                                .Equals(pro.Detalleprecio.Max(max => (DateTime?)max.FechaHoraDetalle)))
-                            .Min(precio => (long?)precio.PrecioFarmaco))
+                            .Where(fecha => fecha.FechaHoraDetalle.Equals(pro.Detalleprecio.Max(max => max.FechaHoraDetalle)))
+                            .Min(precio => precio.PrecioFarmaco))
+                        .Select(dp => new Detalleprecio{
+                            IdDetallePrecio = dp.IdDetallePrecio,
+                            Estado = dp.Estado,
+                            FechaHoraDetalle = dp.FechaHoraDetalle,
+                            PrecioFarmaco = dp.PrecioFarmaco,
+                            ProductoIdProducto = dp.ProductoIdProducto,
+                            SucursalIdSucursal = dp.SucursalIdSucursal,
+                            SucursalIdSucursalNavigation = new Sucursal{
+                                IdSucursal = dp.SucursalIdSucursalNavigation.IdSucursal,
+                                Estado = dp.SucursalIdSucursalNavigation.Estado,
+                                FarmaciaIdFarmaciaNavigation = dp.SucursalIdSucursalNavigation.FarmaciaIdFarmaciaNavigation
+                            } 
+                        })
                         .ToList()
                 })
                 .ToListAsync();

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,9 +20,30 @@ namespace preciosaludable.Controllers
             _context = context;
         }
 
+        // GET: api/Sucursal/All
+        [HttpGet("All")]
+        public async Task<ActionResult<IEnumerable<Sucursal>>> All()
+        {
+            return await _context.Sucursal
+                .AsNoTracking()
+                .Where(p => p.Estado.Value)
+                .ToListAsync();
+        }
+
+        // GET: api/Sucursal/All/1
+        [HttpGet("All/{idFarmacia}")]
+        public async Task<ActionResult<IEnumerable<Sucursal>>> ByDrugstore(int idFarmacia)
+        {
+            return await _context.Sucursal
+                .AsNoTracking()
+                .Include(s => s.ComunaIdComunaNavigation)
+                .Where(s => s.FarmaciaIdFarmacia == idFarmacia && s.Estado.Value)
+                .ToListAsync();
+        }
+
         //By Name or Address
         [HttpGet("[action]")]
-        public async Task<ActionResult<IEnumerable<Sucursal>>> GetSucursales(string s)
+        public async Task<ActionResult<IEnumerable<Sucursal>>> Buscar(string s)
         {
             List<Sucursal> result = new List<Sucursal>();
 
@@ -49,7 +69,7 @@ namespace preciosaludable.Controllers
 
         //By Coords
         [HttpGet("[action]")]
-        public async Task<ActionResult<IEnumerable<Sucursal>>> GetSucursalesByLocation(double latitud, double longitud, int proximidad = 10000)
+        public async Task<ActionResult<IEnumerable<Sucursal>>> ByLocation(double latitud, double longitud, int proximidad = 10000)
         {
             Location location = new Location(latitud, longitud);
             
