@@ -20,6 +20,25 @@ namespace preciosaludable.Controllers
             _context = context;
         }
 
+        // GET: api/Sucursal/
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Sucursal>> GetSucursal(long id)
+        {
+            var sucursal = await _context.Sucursal
+                            .AsNoTracking()
+                            .Where(suc => suc.IdSucursal == id)
+                            .Include(suc => suc.FarmaciaIdFarmaciaNavigation)
+                            .Include(suc => suc.ComunaIdComunaNavigation)
+                            .FirstOrDefaultAsync();
+
+            if (sucursal == null)
+            {
+                return NotFound();
+            }
+
+            return sucursal;
+        }
+
         // GET: api/Sucursal/All
         [HttpGet("All")]
         public async Task<ActionResult<IEnumerable<Sucursal>>> All()

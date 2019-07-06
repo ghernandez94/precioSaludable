@@ -27,7 +27,10 @@ namespace preciosaludable.Controllers
                             .AsNoTracking()
                             .Include(p => p.FarmacoIdFarmacoNavigation)
                                 .ThenInclude(f => f.Concentracion)
-                                .ThenInclude(c => c.PrincipioActivoIdPrincipioActivoNavigation)
+                                    .ThenInclude(c => c.PrincipioActivoIdPrincipioActivoNavigation)
+                            .Include(p => p.FarmacoIdFarmacoNavigation)
+                                .ThenInclude(f => f.Concentracion)
+                                    .ThenInclude(c => c.UnidadMedidaIdUnidadMedidaNavigation)
                             .Include(p => p.FarmacoIdFarmacoNavigation)
                                 .ThenInclude(f => f.PresentacionIdPresentacionNavigation)
                             .Include(p => p.LaboratorioIdLaboratorioNavigation)
@@ -117,13 +120,15 @@ namespace preciosaludable.Controllers
         [HttpGet("Buscar/{s}")]
         public async Task<ActionResult<IEnumerable<Producto>>> Buscar(string s)
         {
+
             var productos = await _context.Producto
                 .AsNoTracking()
                 .Where(pro => (pro.NombreComercialProducto.Contains(s) 
                     || pro.FarmacoIdFarmacoNavigation.Concentracion
                         .Where( con => con.PrincipioActivoIdPrincipioActivoNavigation.NombrePrincipioActivo.Contains(s))
                         .Any())
-                    && pro.Estado.Value)
+                    && pro.Estado.Value
+                    && pro.Detalleprecio.Any())
                 .Select(pro => new Producto{
                     CantidadPresentacion = pro.CantidadPresentacion,
                     Estado = pro.Estado,
@@ -137,9 +142,12 @@ namespace preciosaludable.Controllers
                     ProductoBioequivalente = pro.ProductoBioequivalente,
                     ProductoBioequivalenteNavigation = pro.ProductoBioequivalenteNavigation,
                     Detalleprecio = pro.Detalleprecio
-                        .Where(dp => dp.PrecioFarmaco == pro.Detalleprecio
-                            .Where(fecha => fecha.FechaHoraDetalle.Equals(pro.Detalleprecio.Max(max => max.FechaHoraDetalle)))
-                            .Min(precio => precio.PrecioFarmaco))
+                        .Where(dp => dp.IdDetallePrecio == pro.Detalleprecio
+                            .Where(aux => aux.SucursalIdSucursal == dp.SucursalIdSucursal)
+                            .OrderByDescending(aux => aux.FechaHoraDetalle)
+                            .Select(aux => aux.IdDetallePrecio)
+                            .FirstOrDefault())
+                        .Where(dp => dp.PrecioFarmaco == pro.Detalleprecio.Min(aux => aux.PrecioFarmaco))
                         .Select(dp => new Detalleprecio{
                             IdDetallePrecio = dp.IdDetallePrecio,
                             Estado = dp.Estado,

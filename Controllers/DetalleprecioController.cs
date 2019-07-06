@@ -62,15 +62,18 @@ namespace preciosaludable.Controllers
                 .ToListAsync();
         }
 
-        [HttpGet("[action]")]
+        [HttpGet("historial/{idProducto}/{idSucursal}")]
         public async Task<ActionResult<IEnumerable<Detalleprecio>>> GetHistorial(long IdProducto, long IdSucursal){
             return await _context.Detalleprecio
                 .AsNoTracking()
                 .Include(dp => dp.SucursalIdSucursalNavigation)
+                    .ThenInclude(suc => suc.FarmaciaIdFarmaciaNavigation)
+                .Include(dp => dp.SucursalIdSucursalNavigation)
+                    .ThenInclude(suc => suc.ComunaIdComunaNavigation)
                 .Where(dp => dp.ProductoIdProducto == IdProducto
                     && dp.SucursalIdSucursal == IdSucursal
                     && dp.Estado.Value)
-                .OrderByDescending(dp => dp.FechaHoraDetalle)
+                .OrderBy(dp => dp.FechaHoraDetalle)
                 .ToListAsync();
         }
     }
